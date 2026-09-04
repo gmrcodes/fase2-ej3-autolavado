@@ -42,13 +42,13 @@ class App(tk.Tk):
   def __init__(self):
     super().__init__()
     self.title("Fase 2 Ejercicio 3 - Autolavado")
-    self.geometry("640x480")
+    self.geometry("660x480")
 
     self.usuario_db = Usuario()
     self.frame_actual = None
 
-    self.cars_in_parking = []
-    self.hourly_rate = 5000
+    self.autos_parqueados = []
+    self.tarifa_hora = 5000
 
     # Iniciar directamente en la pantalla de login
     self.show_login()
@@ -90,7 +90,7 @@ class App(tk.Tk):
   def show_core_feature(self):
     self.clear_screen()
 
-    # Este es el contenedor donde agregaremos la vista después del login
+    # Esta es la vista después del login
     self.frame_actual = tk.Frame(self)
     self.frame_actual.pack(expand=True, fill="both", padx=20, pady=20)
 
@@ -101,7 +101,7 @@ class App(tk.Tk):
         font=("Arial", 11, "bold"),
     ).pack(pady=10)
 
-    # Registrar ingreso
+    # Vista de registrar ingreso
     frame_ingreso = tk.Frame(self.frame_actual)
     frame_ingreso.pack(pady=10)
 
@@ -110,21 +110,22 @@ class App(tk.Tk):
     self.entry_placa.grid(row=0,column=1,padx=5)
 
     tk.Label(frame_ingreso, text="Hora ingreso (0-23):").grid(row=0,column=2,padx=5)
-    self.entry_hora = tk.Entry(frame_ingreso)
+    self.entry_hora = tk.Entry(frame_ingreso, width=10)
     self.entry_hora.grid(row=0,column=3,padx=5)
 
-    btn_registro = tk.Button(frame_ingreso, text="Registrar ingreso", command=lambda:self.registrar_auto).grid(row=0,column=4,padx=10)
+    btn_registro = tk.Button(frame_ingreso, text="Registrar ingreso", command=self.registrar_auto)
+    btn_registro.grid(row=0,column=4,padx=10)
 
-    # Lista de autos
+    # Vista de Lista de autos
     self.lista_autos = tk.Listbox(self.frame_actual, width=60, height=10)
     self.lista_autos.pack(pady=10)
 
-    # Frame para salida
+    # Vista de frame para salida
     frame_salida = tk.Frame(self.frame_actual)
     frame_salida.pack(pady=10)
     
-    tk.Label(frame_salida, text="Hora salida:").grid(row=0, column=0, padx=5)
-    self.entry_hora_salida = tk.Entry(frame_salida, width=5)
+    tk.Label(frame_salida, text="Hora salida (0-23):").grid(row=0, column=0, padx=5)
+    self.entry_hora_salida = tk.Entry(frame_salida, width=10)
     self.entry_hora_salida.grid(row=0, column=1, padx=5)
     
     btn_salida = tk.Button(frame_salida, text="Registrar Salida", 
@@ -135,47 +136,57 @@ class App(tk.Tk):
                                  font=("Arial", 12, "bold"), fg="green")
     self.label_total.pack(pady=5)
 
-def registrar_auto(self):
-    placa = self.entry_placa.get().upper()
-    try:
-        hora = int(self.entry_hora.get())
-        if 0 <= hora <= 23:
-            auto = AutoLavado(placa, hora, self.tarifa_hora)
-            self.autos_en_parqueo.append(auto)
-            self.actualizar_lista()
-            messagebox.showinfo("Éxito", f"Auto {placa} registrado")
-        else:
-            messagebox.showerror("Error", "Hora inválida (0-23)")
-    except ValueError:
-        messagebox.showerror("Error", "Hora debe ser número")
-
-def actualizar_lista(self):
-    self.lista_autos.delete(0, tk.END)
-    for i, auto in enumerate(self.autos_en_parqueo):
-        self.lista_autos.insert(tk.END, 
-            f"{i+1}. Placa: {auto.obtener_placa()} - Ingreso: {auto._hora_ingreso}:00")
-
-def registrar_salida_auto(self):
-    seleccion = self.lista_autos.curselection()
-    if not seleccion:
-        messagebox.showwarning("Atención", "Seleccione un auto")
+  def registrar_auto(self):
+      placa = self.entry_placa.get().upper().strip()
+      # Validar ingreso de placa
+      if not placa or len(placa) < 6:
+        messagebox.showwarning("Atención", "Ingrese una placa válida")
         return
-    
-    try:
-        hora_salida = int(self.entry_hora_salida.get())
-        idx = seleccion[0]
-        auto = self.autos_en_parqueo[idx]
-        
-        if auto.registrar_salida(hora_salida):
-            total = auto.calcular_pago()
-            self.label_total.config(text=f"Total a pagar: ${total:,.0f}")
-            self.autos_en_parqueo.pop(idx)
-            self.actualizar_lista()
-            messagebox.showinfo("Pago", f"Total: ${total:,.0f}")
-        else:
-            messagebox.showerror("Error", "Hora de salida inválida")
-    except ValueError:
-        messagebox.showerror("Error", "Hora debe ser número")
+
+      try:
+          hora = int(self.entry_hora.get())
+          if 0 <= hora <= 23:
+              auto = AutoLavado(placa, hora, self.tarifa_hora)
+              self.autos_parqueados.append(auto)
+              self.actualizar_lista()
+              messagebox.showinfo("Éxito", f"Auto {placa} registrado")
+              self.entry_hora.delete(0,tk.END)
+              self.entry_placa.delete(0,tk.END)
+              self.entry_placa.focus_set()
+          else:
+              messagebox.showerror("Error", "Hora inválida (0-23)")
+      except ValueError:
+          messagebox.showerror("Error", "Hora debe ser número")
+
+  def actualizar_lista(self):
+      self.lista_autos.delete(0, tk.END)
+      for i, auto in enumerate(self.autos_parqueados):
+          self.lista_autos.insert(tk.END, 
+              f"{i+1}. Placa: {auto.obtener_placa()} - Ingreso: {auto._hora_ingreso}:00")
+
+  def registrar_salida_auto(self):
+      seleccion = self.lista_autos.curselection()
+      if not seleccion:
+          messagebox.showwarning("Atención", "Seleccione un auto")
+          return
+      
+      try:
+          hora_salida = int(self.entry_hora_salida.get())
+          idx = seleccion[0]
+          auto = self.autos_parqueados[idx]
+          
+          if auto.registrar_salida(hora_salida):
+              total = auto.calcular_pago(hora_salida)
+              self.label_total.config(text=f"Total a pagar: ${total:,.0f}")
+              self.autos_parqueados.pop(idx)
+              self.actualizar_lista()
+              messagebox.showinfo("Pago", f"Total: ${total:,.0f}")
+              self.entry_hora_salida.delete(0,tk.END)
+              self.entry_placa.focus_set()
+          else:
+              messagebox.showerror("Error", "Hora de salida inválida")
+      except ValueError:
+          messagebox.showerror("Error", "Hora debe ser número")
 
 
 if __name__ == "__main__":
