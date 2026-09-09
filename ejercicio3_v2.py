@@ -159,19 +159,19 @@ class CarWashApp(tk.Tk):
         entry_frame.pack(fill="x", padx=15, pady=10)
 
         ttk.Label(entry_frame, text="License Plate:").grid(
-            row=0, column=0, padx=5, pady=5, sticky="w"
+            row=0, column=0, padx=5, pady=5
         )
         self.entry_plate = ttk.Entry(entry_frame)
         self.entry_plate.grid(row=0, column=1, padx=5, pady=5)
 
         ttk.Label(entry_frame, text="Check-In Time (HH:MM):").grid(
-            row=0, column=2, padx=5, pady=5, sticky="w"
+            row=0, column=2, padx=5, pady=5
         )
         self.entry_in_time = ttk.Entry(entry_frame)
         self.entry_in_time.grid(row=0, column=3, padx=5, pady=5)
 
         ttk.Label(entry_frame, text="Hourly Rate ($):").grid(
-            row=1, column=0, padx=5, pady=5, sticky="w"
+            row=1, column=0, padx=5, pady=5
         )
         self.entry_rate = ttk.Entry(entry_frame)
         self.entry_rate.grid(row=1, column=1, padx=5, pady=5)
@@ -179,7 +179,7 @@ class CarWashApp(tk.Tk):
         btn_checkin = ttk.Button(
             entry_frame, text="Register Entry", command=self._handle_check_in
         )
-        btn_checkin.grid(row=1, column=2, columnspan=2, padx=5, pady=5, sticky="ew")
+        btn_checkin.grid(row=1, column=2, columnspan=2, padx=5, pady=5)
 
         # Tabla de Vehículos Activos
         table_frame = ttk.LabelFrame(self, text=" Active Vehicles ")
@@ -220,7 +220,7 @@ class CarWashApp(tk.Tk):
             exit_frame, text="Process Exit & Pay", command=self._handle_check_out
         )
         btn_checkout.grid(
-            row=1, column=0, columnspan=4, padx=5, pady=5, sticky="ew"
+            row=1, column=0, columnspan=4, padx=5, pady=5
         )
 
     def _handle_check_in(self):
