@@ -1,7 +1,9 @@
+import math
 import tkinter as tk
 from datetime import datetime
-from tkinter import messagebox
+from tkinter import messagebox, ttk, font
 
+SYSTEM_FONT = "TkDefaultFont"
 
 class User:
     """Representa el usuario del sistema de autenticación."""
@@ -70,21 +72,17 @@ class AutoLavado:
 
     @staticmethod
     def _validate_time(time_value):
-        """Valida y normaliza una hora de ingreso o salida."""
+        """Valida y normaliza una hora de ingreso o salida con formato HH:MM."""
         if isinstance(time_value, datetime):
-            return time_value
+            return time_value.replace(second=0, microsecond=0)
 
         if time_value is None or str(time_value).strip() == "":
             raise ValueError("La hora no puede estar vacía.")
 
-        if isinstance(time_value, int) and 0 <= time_value <= 23:
-            today = datetime.now().date()
-            return datetime.combine(today, datetime.min.time()).replace(hour=time_value)
-
         try:
-            return datetime.strptime(str(time_value).strip(), "%H:%M")
+            return datetime.strptime(str(time_value).strip(), "%H:%M").replace(second=0, microsecond=0)
         except ValueError:
-            raise ValueError("La hora debe ser un valor válido en formato HH:MM o un entero entre 0 y 23.")
+            raise ValueError("La hora debe estar en formato HH:MM.")
 
     @staticmethod
     def _validate_hourly_rate(hourly_rate):
@@ -121,16 +119,16 @@ class AutoLavado:
         return self._plate
 
     def get_entry_time(self):
-        """Obtiene la hora de ingreso en formato HH:MM:SS."""
+        """Obtiene la hora de ingreso en formato HH:MM."""
         if self._entry_time is None:
             return ""
-        return self._entry_time.strftime("%H:%M:%S")
+        return self._entry_time.strftime("%H:%M")
 
     def get_exit_time(self):
-        """Obtiene la hora de salida en formato HH:MM:SS."""
+        """Obtiene la hora de salida en formato HH:MM."""
         if self._exit_time is None:
             return ""
-        return self._exit_time.strftime("%H:%M:%S")
+        return self._exit_time.strftime("%H:%M")
 
     def get_hourly_rate(self):
         """Obtiene la tarifa por hora."""
@@ -152,10 +150,18 @@ class AutoLavado:
             raise ValueError("Debe registrar primero la hora de salida.")
 
         duration_seconds = (self._exit_time - self._entry_time).total_seconds()
-        duration_hours = duration_seconds / 3600
-        if duration_hours < 1:
-            duration_hours = 1
-        return duration_hours * self._hourly_rate
+        billed_hours = max(1, math.ceil(duration_seconds / 3600))
+        return billed_hours * self._hourly_rate
+
+    def get_total_duration(self):
+        """Obtiene el tiempo total transcurrido en horas y minutos."""
+        if self._exit_time is None:
+            raise ValueError("Debe registrar primero la hora de salida.")
+
+        total_minutes = int((self._exit_time - self._entry_time).total_seconds() // 60)
+        hours = total_minutes // 60
+        minutes = total_minutes % 60
+        return hours, minutes
 
 
 class App(tk.Tk):
@@ -231,7 +237,7 @@ class App(tk.Tk):
         self.clock_label = tk.Label(
             self.current_frame,
             textvariable=self.clock_var,
-            font=("Arial", 10, "bold"),
+            font=(SYSTEM_FONT, 10, "bold"),
             fg="darkblue",
         )
         self.clock_label.pack(anchor="e", pady=(0, 10))
@@ -240,7 +246,7 @@ class App(tk.Tk):
         tk.Label(
             self.current_frame,
             text="Car Wash",
-            font=("Arial", 11, "bold"),
+            font=(SYSTEM_FONT, 12, "bold"),
         ).pack(pady=(0, 10))
 
         frame_entry = tk.Frame(self.current_frame)
@@ -252,14 +258,21 @@ class App(tk.Tk):
 
         self.entry_time = tk.Entry(frame_entry, width=15, state="readonly")
         self.entry_time.grid(row=0, column=2, padx=5)
-        self.entry_time.insert(0, datetime.now().strftime("%H:%M:%S"))
+        self.entry_time.insert(0, datetime.now().strftime("%H:%M"))
 
         btn_register = tk.Button(frame_entry, text="Check in", command=self.register_car)
         btn_register.grid(row=0, column=3, padx=10)
 
         frame_entry.grid_columnconfigure(1, weight=1)
 
-        self.car_list = tk.Listbox(self.current_frame, height=10)
+        columns = ("plate", "entry_time", "hourly_rate")
+        self.car_list = ttk.Treeview(self.current_frame, columns=columns, show="headings", height=10)
+        self.car_list.heading("plate", text="License Plate")
+        self.car_list.heading("entry_time", text="Checkin time")
+        self.car_list.heading("hourly_rate", text="Hourly rate")
+        self.car_list.column("plate", anchor="center", width=180)
+        self.car_list.column("entry_time", anchor="center", width=150)
+        self.car_list.column("hourly_rate", anchor="center", width=130)
         self.car_list.pack(fill="both", expand=True, pady=10)
 
         frame_exit = tk.Frame(self.current_frame)
@@ -267,18 +280,10 @@ class App(tk.Tk):
 
         self.entry_exit_time = tk.Entry(frame_exit, width=15, state="readonly")
         self.entry_exit_time.grid(row=0, column=0, padx=5)
-        self.entry_exit_time.insert(0, datetime.now().strftime("%H:%M:%S"))
+        self.entry_exit_time.insert(0, datetime.now().strftime("%H:%M"))
 
         btn_exit = tk.Button(frame_exit, text="Check out", command=self.register_exit_car)
         btn_exit.grid(row=0, column=1, padx=10)
-
-        self.label_total = tk.Label(
-            self.current_frame,
-            text="",
-            font=("Arial", 12, "bold"),
-            fg="green",
-        )
-        self.label_total.pack(pady=5)
 
     def update_clock(self):
         """Actualiza la hora del sistema en la ventana principal."""
@@ -287,7 +292,6 @@ class App(tk.Tk):
 
     def register_car(self):
         """Registra un vehículo con validaciones de placa y hora de ingreso."""
-        self.label_total.config(text="")
         plate_value = self.entry_plate.get()
         entry_time_value = datetime.now()
 
@@ -298,7 +302,7 @@ class App(tk.Tk):
             self.cars_in_service.append(auto)
             self.entry_time.config(state="normal")
             self.entry_time.delete(0, tk.END)
-            self.entry_time.insert(0, entry_time_clean.strftime("%H:%M:%S"))
+            self.entry_time.insert(0, entry_time_clean.strftime("%H:%M"))
             self.entry_time.config(state="readonly")
             self.update_car_list()
             messagebox.showinfo("Success!", f"Car {plate_clean} registered.")
@@ -309,17 +313,20 @@ class App(tk.Tk):
             self.entry_plate.focus_set()
 
     def update_car_list(self):
-        """Actualiza la lista de vehículos activos."""
-        self.car_list.delete(0, tk.END)
-        for index, auto in enumerate(self.cars_in_service):
+        """Actualiza la lista de vehículos activos con columnas y encabezados."""
+        for row in self.car_list.get_children():
+            self.car_list.delete(row)
+
+        for auto in self.cars_in_service:
             self.car_list.insert(
+                "",
                 tk.END,
-                f"{index + 1}. License plate: {auto.get_plate()} - Check-in: {auto.get_entry_time()}:00",
+                values=(auto.get_plate(), auto.get_entry_time(), f"{auto.get_hourly_rate():,.0f}"),
             )
 
     def register_exit_car(self):
         """Registra la salida de un vehículo y calcula el total a pagar."""
-        selection = self.car_list.curselection()
+        selection = self.car_list.selection()
         if not selection:
             messagebox.showwarning("Alert!", "Please select a car from the list.")
             return
@@ -329,17 +336,25 @@ class App(tk.Tk):
             exit_time_clean = AutoLavado._validate_time(exit_time_value)
             self.entry_exit_time.config(state="normal")
             self.entry_exit_time.delete(0, tk.END)
-            self.entry_exit_time.insert(0, exit_time_clean.strftime("%H:%M:%S"))
+            self.entry_exit_time.insert(0, exit_time_clean.strftime("%H:%M"))
             self.entry_exit_time.config(state="readonly")
 
-            index = selection[0]
+            index = self.car_list.index(selection[0])
             auto = self.cars_in_service[index]
             total = auto.calculate_payment(exit_time_clean)
+            hours, minutes = auto.get_total_duration()
 
-            self.label_total.config(text=f"Total: ${total:,.0f}")
+            receipt = (
+                f"Plate: {auto.get_plate()}\n"
+                f"Check-in time: {auto.get_entry_time()}\n"
+                f"Check-out time: {exit_time_clean.strftime('%H:%M')}\n"
+                f"Total time: {hours} hours y {minutes} minutes\n"
+                f"Total due: ${total:,.0f}"
+            )
+
             self.cars_in_service.pop(index)
             self.update_car_list()
-            messagebox.showinfo("Paid", f"Total: ${total:,.0f}")
+            messagebox.showinfo("Cobro", receipt)
             self.entry_plate.focus_set()
         except ValueError as error:
             messagebox.showerror("Error", str(error))
