@@ -1,201 +1,351 @@
 import tkinter as tk
+from datetime import datetime
 from tkinter import messagebox
 
 
-class Usuario:
+class User:
+    """Representa el usuario del sistema de autenticación."""
 
-  def __init__(self, user="123", password="123"):
-    self._usuario = user
-    self._password = password
+    def __init__(self, username="123", password="123"):
+        """Inicializa el usuario con validación de campos obligatorios."""
+        self._username = self._validate_username(username)
+        self._password = self._validate_password(password)
 
-  def validar(self, usuario_ingresado, password_ingresada):
-    return usuario_ingresado == self._usuario and password_ingresada == self._password
+    @staticmethod
+    def _validate_username(username):
+        """Valida que el nombre de usuario no esté vacío."""
+        if username is None or str(username).strip() == "":
+            raise ValueError("El nombre de usuario no puede estar vacío.")
+        return str(username).strip()
+
+    @staticmethod
+    def _validate_password(password):
+        """Valida que la contraseña no esté vacía."""
+        if password is None or str(password).strip() == "":
+            raise ValueError("La contraseña no puede estar vacía.")
+        return str(password).strip()
+
+    def set_username(self, username):
+        """Establece un nombre de usuario validado."""
+        self._username = self._validate_username(username)
+
+    def set_password(self, password):
+        """Establece una contraseña validada."""
+        self._password = self._validate_password(password)
+
+    def get_username(self):
+        """Obtiene el nombre de usuario almacenado."""
+        return self._username
+
+    def get_password(self):
+        """Obtiene la contraseña almacenada."""
+        return self._password
+
+    def validate_credentials(self, username, password):
+        """Valida las credenciales ingresadas contra las del sistema."""
+        username_clean = self._validate_username(username)
+        password_clean = self._validate_password(password)
+        return username_clean == self._username and password_clean == self._password
+
 
 class AutoLavado:
-  def __init__(self, placa, hora_ingreso, tarifa_hora):
-    self._placa = placa
-    self._hora_ingreso = hora_ingreso
-    self._tarifa_hora = tarifa_hora
-    self._hora_salida = None
+    """Representa un vehículo que entra y sale del lavadero."""
 
-  def registrar_ingreso(self, hora):
-    self._hora_ingreso = hora
+    def __init__(self, plate, entry_time, hourly_rate):
+        """Inicializa el vehículo con validación de datos."""
+        self._plate = self._validate_plate(plate)
+        self._entry_time = self._validate_time(entry_time)
+        self._hourly_rate = self._validate_hourly_rate(hourly_rate)
+        self._exit_time = None
 
-  def  registrar_salida(self, hora):
-    if hora < self._hora_ingreso:
-      return False
-    self._hora_salida = hora
-    return True
+    @staticmethod
+    def _validate_plate(plate):
+        """Valida que la placa no esté vacía y tenga una longitud mínima."""
+        if plate is None or str(plate).strip() == "":
+            raise ValueError("La placa no puede estar vacía.")
+        plate_clean = str(plate).strip().upper()
+        if len(plate_clean) < 6:
+            raise ValueError("La placa debe tener al menos 6 caracteres.")
+        return plate_clean
 
-  def calcular_pago(self, hora_salida):
-    horas = hora_salida - self._hora_ingreso
-    if horas < 1:
-      horas = 1
+    @staticmethod
+    def _validate_time(time_value):
+        """Valida y normaliza una hora de ingreso o salida."""
+        if isinstance(time_value, datetime):
+            return time_value
 
-    return horas * self._tarifa_hora
+        if time_value is None or str(time_value).strip() == "":
+            raise ValueError("La hora no puede estar vacía.")
 
-  def get_placa(self):
-    return self._placa
+        if isinstance(time_value, int) and 0 <= time_value <= 23:
+            today = datetime.now().date()
+            return datetime.combine(today, datetime.min.time()).replace(hour=time_value)
 
-  def get_hora_ingreso(self):
-    return self._hora_ingreso
+        try:
+            return datetime.strptime(str(time_value).strip(), "%H:%M")
+        except ValueError:
+            raise ValueError("La hora debe ser un valor válido en formato HH:MM o un entero entre 0 y 23.")
+
+    @staticmethod
+    def _validate_hourly_rate(hourly_rate):
+        """Valida que la tarifa por hora sea mayor que cero."""
+        try:
+            rate = float(hourly_rate)
+        except (TypeError, ValueError):
+            raise ValueError("La tarifa por hora debe ser numérica.")
+        if rate <= 0:
+            raise ValueError("La tarifa por hora debe ser mayor que cero.")
+        return rate
+
+    def set_plate(self, plate):
+        """Establece una placa validada."""
+        self._plate = self._validate_plate(plate)
+
+    def set_entry_time(self, entry_time):
+        """Establece la hora de ingreso validada."""
+        self._entry_time = self._validate_time(entry_time)
+
+    def set_exit_time(self, exit_time):
+        """Establece la hora de salida validada."""
+        exit_clean = self._validate_time(exit_time)
+        if exit_clean < self._entry_time:
+            raise ValueError("La hora de salida no puede ser menor que la de ingreso.")
+        self._exit_time = exit_clean
+
+    def set_hourly_rate(self, hourly_rate):
+        """Establece la tarifa por hora validada."""
+        self._hourly_rate = self._validate_hourly_rate(hourly_rate)
+
+    def get_plate(self):
+        """Obtiene la placa del vehículo."""
+        return self._plate
+
+    def get_entry_time(self):
+        """Obtiene la hora de ingreso en formato HH:MM:SS."""
+        if self._entry_time is None:
+            return ""
+        return self._entry_time.strftime("%H:%M:%S")
+
+    def get_exit_time(self):
+        """Obtiene la hora de salida en formato HH:MM:SS."""
+        if self._exit_time is None:
+            return ""
+        return self._exit_time.strftime("%H:%M:%S")
+
+    def get_hourly_rate(self):
+        """Obtiene la tarifa por hora."""
+        return self._hourly_rate
+
+    def register_entry(self, entry_time):
+        """Registra la hora de ingreso del vehículo."""
+        self.set_entry_time(entry_time)
+
+    def register_exit(self, exit_time):
+        """Registra la hora de salida del vehículo validando el rango."""
+        self.set_exit_time(exit_time)
+
+    def calculate_payment(self, exit_time=None):
+        """Calcula el total a pagar por el servicio de lavado."""
+        if exit_time is not None:
+            self.register_exit(exit_time)
+        if self._exit_time is None:
+            raise ValueError("Debe registrar primero la hora de salida.")
+
+        duration_seconds = (self._exit_time - self._entry_time).total_seconds()
+        duration_hours = duration_seconds / 3600
+        if duration_hours < 1:
+            duration_hours = 1
+        return duration_hours * self._hourly_rate
+
 
 class App(tk.Tk):
+    """Interfaz principal para el sistema de autolavado."""
 
-  def __init__(self):
-    super().__init__()
-    self.title("Phase 2 Exercise 3 - Carwash")
-    self.geometry("660x480")
+    def __init__(self):
+        """Inicializa la ventana principal y la sesión del sistema."""
+        super().__init__()
+        self.title("Phase 2 Exercise 3 - Carwash")
+        self.geometry("660x480")
 
-    self.usuario_db = Usuario()
-    self.frame_actual = None
+        self.user_db = User()
+        self.current_frame = None
+        self.cars_in_service = []
+        self.hourly_rate = 3000
+        self.clock_var = tk.StringVar()
 
-    self.fila_carros = []
-    self.tarifa_hora = 5000
+        # Se inicia directamente en la pantalla de login.
+        self.show_login()
 
-    # Iniciar directamente en la pantalla de login
-    self.show_login()
+    def clear_screen(self):
+        """Limpia el contenido activo de la ventana."""
+        if self.current_frame is not None:
+            self.current_frame.destroy()
 
-  def clear_screen(self):
-    if self.frame_actual is not None:
-      self.frame_actual.destroy()
+    def show_login(self):
+        """Muestra la pantalla de inicio de sesión."""
+        self.clear_screen()
 
-  def show_login(self):
-    self.clear_screen()
+        # Contenedor para los elementos del login.
+        self.current_frame = tk.Frame(self)
+        self.current_frame.pack(expand=True, fill="both", padx=20, pady=20)
 
-    # Contenedor para los elementos del login
-    self.frame_actual = tk.Frame(self)
-    self.frame_actual.pack(expand=True, fill="both", padx=20, pady=20)
+        tk.Label(self.current_frame, text="User:").pack(anchor="w", pady=(10, 2))
+        self.entry_user = tk.Entry(self.current_frame)
+        self.entry_user.pack(fill="x", pady=(0, 10))
 
-    # Componentes de la interfaz
-    tk.Label(self.frame_actual, text="User:").pack(anchor="w", pady=(10, 2))
-    entry_user = tk.Entry(self.frame_actual)
-    entry_user.pack(fill="x", pady=(0, 10))
+        tk.Label(self.current_frame, text="Password:").pack(anchor="w", pady=(0, 2))
+        self.entry_password = tk.Entry(self.current_frame, show="*")
+        self.entry_password.pack(fill="x", pady=(0, 15))
 
-    tk.Label(self.frame_actual, text="Password:").pack(anchor="w", pady=(0, 2))
-    entry_pass = tk.Entry(self.frame_actual, show="*")
-    entry_pass.pack(fill="x", pady=(0, 15))
+        btn_login = tk.Button(
+            self.current_frame,
+            text="Sign in",
+            command=self.process_login,
+        )
+        btn_login.pack(fill="x")
 
-    btn_login = tk.Button(
-        self.frame_actual,
-        text="Sign in",
-        command=lambda: self.process_login(entry_user.get(), entry_pass.get()),
-    )
-    btn_login.pack(fill="x")
+    def process_login(self):
+        """Procesa el inicio de sesión con validación de campos vacíos."""
+        user_value = self.entry_user.get()
+        password_value = self.entry_password.get()
 
-  def process_login(self, user, password):
-    if self.usuario_db.validar(user, password):
-      messagebox.showinfo("Great", "Login success!.")
-      self.show_core_feature()
-    else:
-      messagebox.showerror("Error", "User or password incorrect.")
+        try:
+            valid_user = User._validate_username(user_value)
+            valid_password = User._validate_password(password_value)
+            if self.user_db.validate_credentials(valid_user, valid_password):
+                messagebox.showinfo("Great", "Login success!")
+                self.show_core_feature()
+            else:
+                messagebox.showerror("Error", "User or password incorrect.")
+        except ValueError as error:
+            messagebox.showwarning("Alert!", str(error))
 
-  def show_core_feature(self):
-    self.clear_screen()
+    def show_core_feature(self):
+        """Muestra la pantalla principal del sistema de lavado."""
+        self.clear_screen()
 
-    # Esta es la vista después del login
-    self.frame_actual = tk.Frame(self)
-    self.frame_actual.pack(expand=True, fill="both", padx=20, pady=20)
+        # Esta es la vista después del login.
+        self.current_frame = tk.Frame(self)
+        self.current_frame.pack(expand=True, fill="both", padx=20, pady=20)
 
-    # Titulo
-    tk.Label(
-        self.frame_actual,
-        text="Car Wash",
-        font=("Arial", 11, "bold"),
-    ).pack(pady=10)
+        self.clock_label = tk.Label(
+            self.current_frame,
+            textvariable=self.clock_var,
+            font=("Arial", 10, "bold"),
+            fg="darkblue",
+        )
+        self.clock_label.pack(anchor="e", pady=(0, 10))
+        self.update_clock()
 
-    # Vista de registrar ingreso
-    frame_ingreso = tk.Frame(self.frame_actual)
-    frame_ingreso.pack(pady=10)
+        tk.Label(
+            self.current_frame,
+            text="Car Wash",
+            font=("Arial", 11, "bold"),
+        ).pack(pady=(0, 10))
 
-    tk.Label(frame_ingreso, text="License plate:").grid(row=0,column=0,padx=5)
-    self.entry_placa = tk.Entry(frame_ingreso)
-    self.entry_placa.grid(row=0,column=1,padx=5)
+        frame_entry = tk.Frame(self.current_frame)
+        frame_entry.pack(fill="x", pady=10)
 
-    tk.Label(frame_ingreso, text="Start time (0-23):").grid(row=0,column=2,padx=5)
-    self.entry_hora = tk.Entry(frame_ingreso, width=10)
-    self.entry_hora.grid(row=0,column=3,padx=5)
+        tk.Label(frame_entry, text="License plate:").grid(row=0, column=0, padx=5)
+        self.entry_plate = tk.Entry(frame_entry)
+        self.entry_plate.grid(row=0, column=1, padx=5, sticky="ew")
 
-    btn_registro = tk.Button(frame_ingreso, text="Check in", command=self.registrar_auto)
-    btn_registro.grid(row=0,column=4,padx=10)
+        self.entry_time = tk.Entry(frame_entry, width=15, state="readonly")
+        self.entry_time.grid(row=0, column=2, padx=5)
+        self.entry_time.insert(0, datetime.now().strftime("%H:%M:%S"))
 
-    # Vista de Lista de autos
-    self.lista_autos = tk.Listbox(self.frame_actual, width=60, height=10)
-    self.lista_autos.pack(pady=10)
+        btn_register = tk.Button(frame_entry, text="Check in", command=self.register_car)
+        btn_register.grid(row=0, column=3, padx=10)
 
-    # Vista de frame para salida
-    frame_salida = tk.Frame(self.frame_actual)
-    frame_salida.pack(pady=10)
-    
-    tk.Label(frame_salida, text="Time out (0-23):").grid(row=0, column=0, padx=5)
-    self.entry_hora_salida = tk.Entry(frame_salida, width=10)
-    self.entry_hora_salida.grid(row=0, column=1, padx=5)
-    
-    btn_salida = tk.Button(frame_salida, text="Check out",
-              command=self.registrar_salida_auto).grid(row=0, column=2, padx=10)
-    
-    # Label para mostrar total
-    self.label_total = tk.Label(self.frame_actual, text="", 
-                                 font=("Arial", 12, "bold"), fg="green")
-    self.label_total.pack(pady=5)
+        frame_entry.grid_columnconfigure(1, weight=1)
 
-  def registrar_auto(self):
-    self.label_total.config(text="")
-    placa = self.entry_placa.get().upper().strip()
-    # Validar ingreso de placa
-    if not placa or len(placa) < 6:
-      messagebox.showwarning("Alert!", "Enter a valid license plate.")
-      self.entry_placa.focus_set()
-      return
+        self.car_list = tk.Listbox(self.current_frame, height=10)
+        self.car_list.pack(fill="both", expand=True, pady=10)
 
-    try:
-      hora = int(self.entry_hora.get())
-      if 0 <= hora <= 23:
-          auto = AutoLavado(placa, hora, self.tarifa_hora)
-          self.fila_carros.append(auto)
-          self.actualizar_lista()
-          messagebox.showinfo("Success!", f"Car {placa} registered")
-          self.entry_hora.delete(0,tk.END)
-          self.entry_placa.delete(0,tk.END)
-          self.entry_placa.focus_set()
-      else:
-          messagebox.showerror("Error", "Invalid time (0-23)")
-    except ValueError:
-        messagebox.showerror("Error", "Start time must be a number")
-        self.entry_hora.focus_set()
+        frame_exit = tk.Frame(self.current_frame)
+        frame_exit.pack(fill="x", pady=10)
 
-  def actualizar_lista(self):
-      self.lista_autos.delete(0, tk.END)
-      for i, auto in enumerate(self.fila_carros):
-          self.lista_autos.insert(tk.END, 
-              f"{i+1}. License plate: {auto.get_placa()} - Checkin: {auto.get_hora_ingreso()}:00")
+        self.entry_exit_time = tk.Entry(frame_exit, width=15, state="readonly")
+        self.entry_exit_time.grid(row=0, column=0, padx=5)
+        self.entry_exit_time.insert(0, datetime.now().strftime("%H:%M:%S"))
 
-  def registrar_salida_auto(self):
-      seleccion = self.lista_autos.curselection()
-      if not seleccion:
-          messagebox.showwarning("Alert!", "Please select a car from list")
-          return
-      
-      try:
-          hora_salida = int(self.entry_hora_salida.get())
-          idx = seleccion[0]
-          auto = self.fila_carros[idx]
-          
-          if auto.registrar_salida(hora_salida):
-              total = auto.calcular_pago(hora_salida)
-              self.label_total.config(text=f"Total: ${total:,.0f}")
-              self.fila_carros.pop(idx)
-              self.actualizar_lista()
-              messagebox.showinfo("Paid", f"Total: ${total:,.0f}")
-              self.entry_hora_salida.delete(0,tk.END)
-              self.entry_placa.focus_set()
-          else:
-              messagebox.showerror("Error", "Failed to register")              
-      except ValueError:
-          messagebox.showerror("Error", "Time out must be a number")
-          self.entry_hora_salida.focus_set()
+        btn_exit = tk.Button(frame_exit, text="Check out", command=self.register_exit_car)
+        btn_exit.grid(row=0, column=1, padx=10)
+
+        self.label_total = tk.Label(
+            self.current_frame,
+            text="",
+            font=("Arial", 12, "bold"),
+            fg="green",
+        )
+        self.label_total.pack(pady=5)
+
+    def update_clock(self):
+        """Actualiza la hora del sistema en la ventana principal."""
+        self.clock_var.set(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+        self.after(1000, self.update_clock)
+
+    def register_car(self):
+        """Registra un vehículo con validaciones de placa y hora de ingreso."""
+        self.label_total.config(text="")
+        plate_value = self.entry_plate.get()
+        entry_time_value = datetime.now()
+
+        try:
+            plate_clean = AutoLavado._validate_plate(plate_value)
+            entry_time_clean = AutoLavado._validate_time(entry_time_value)
+            auto = AutoLavado(plate_clean, entry_time_clean, self.hourly_rate)
+            self.cars_in_service.append(auto)
+            self.entry_time.config(state="normal")
+            self.entry_time.delete(0, tk.END)
+            self.entry_time.insert(0, entry_time_clean.strftime("%H:%M:%S"))
+            self.entry_time.config(state="readonly")
+            self.update_car_list()
+            messagebox.showinfo("Success!", f"Car {plate_clean} registered.")
+            self.entry_plate.delete(0, tk.END)
+            self.entry_plate.focus_set()
+        except ValueError as error:
+            messagebox.showwarning("Alert!", str(error))
+            self.entry_plate.focus_set()
+
+    def update_car_list(self):
+        """Actualiza la lista de vehículos activos."""
+        self.car_list.delete(0, tk.END)
+        for index, auto in enumerate(self.cars_in_service):
+            self.car_list.insert(
+                tk.END,
+                f"{index + 1}. License plate: {auto.get_plate()} - Check-in: {auto.get_entry_time()}:00",
+            )
+
+    def register_exit_car(self):
+        """Registra la salida de un vehículo y calcula el total a pagar."""
+        selection = self.car_list.curselection()
+        if not selection:
+            messagebox.showwarning("Alert!", "Please select a car from the list.")
+            return
+
+        exit_time_value = datetime.now()
+        try:
+            exit_time_clean = AutoLavado._validate_time(exit_time_value)
+            self.entry_exit_time.config(state="normal")
+            self.entry_exit_time.delete(0, tk.END)
+            self.entry_exit_time.insert(0, exit_time_clean.strftime("%H:%M:%S"))
+            self.entry_exit_time.config(state="readonly")
+
+            index = selection[0]
+            auto = self.cars_in_service[index]
+            total = auto.calculate_payment(exit_time_clean)
+
+            self.label_total.config(text=f"Total: ${total:,.0f}")
+            self.cars_in_service.pop(index)
+            self.update_car_list()
+            messagebox.showinfo("Paid", f"Total: ${total:,.0f}")
+            self.entry_plate.focus_set()
+        except ValueError as error:
+            messagebox.showerror("Error", str(error))
+            self.entry_plate.focus_set()
 
 
 if __name__ == "__main__":
-  app = App()
-  app.mainloop()
+    app = App()
+    app.mainloop()
