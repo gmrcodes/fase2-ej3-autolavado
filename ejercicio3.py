@@ -17,14 +17,14 @@ class User:
     def _validate_username(username):
         """Valida que el nombre de usuario no esté vacío."""
         if username is None or str(username).strip() == "":
-            raise ValueError("El nombre de usuario no puede estar vacío.")
+            raise ValueError("The username can't be empty.")
         return str(username).strip()
 
     @staticmethod
     def _validate_password(password):
         """Valida que la contraseña no esté vacía."""
         if password is None or str(password).strip() == "":
-            raise ValueError("La contraseña no puede estar vacía.")
+            raise ValueError("The password can't be empty.")
         return str(password).strip()
 
     def set_username(self, username):
@@ -64,10 +64,10 @@ class AutoLavado:
     def _validate_plate(plate):
         """Valida que la placa no esté vacía y tenga una longitud mínima."""
         if plate is None or str(plate).strip() == "":
-            raise ValueError("La placa no puede estar vacía.")
+            raise ValueError("The plate can't be empty.")
         plate_clean = str(plate).strip().upper()
         if len(plate_clean) < 6:
-            raise ValueError("La placa debe tener al menos 6 caracteres.")
+            raise ValueError("The plate must be at least 6 characters long.")
         return plate_clean
 
     @staticmethod
@@ -77,12 +77,12 @@ class AutoLavado:
             return time_value.replace(second=0, microsecond=0)
 
         if time_value is None or str(time_value).strip() == "":
-            raise ValueError("La hora no puede estar vacía.")
+            raise ValueError("The time can't be empty.")
 
         try:
             return datetime.strptime(str(time_value).strip(), "%H:%M").replace(second=0, microsecond=0)
         except ValueError:
-            raise ValueError("La hora debe estar en formato HH:MM.")
+            raise ValueError("The time must be in format HH:MM.")
 
     @staticmethod
     def _validate_hourly_rate(hourly_rate):
@@ -90,9 +90,9 @@ class AutoLavado:
         try:
             rate = float(hourly_rate)
         except (TypeError, ValueError):
-            raise ValueError("La tarifa por hora debe ser numérica.")
+            raise ValueError("The hourly rate must be a numeric value.")
         if rate <= 0:
-            raise ValueError("La tarifa por hora debe ser mayor que cero.")
+            raise ValueError("The hourly rate must be more than zero.")
         return rate
 
     def set_plate(self, plate):
@@ -107,7 +107,7 @@ class AutoLavado:
         """Establece la hora de salida validada."""
         exit_clean = self._validate_time(exit_time)
         if exit_clean < self._entry_time:
-            raise ValueError("La hora de salida no puede ser menor que la de ingreso.")
+            raise ValueError("The checkout time can't be less than checkin time.")
         self._exit_time = exit_clean
 
     def set_hourly_rate(self, hourly_rate):
@@ -147,7 +147,7 @@ class AutoLavado:
         if exit_time is not None:
             self.register_exit(exit_time)
         if self._exit_time is None:
-            raise ValueError("Debe registrar primero la hora de salida.")
+            raise ValueError("You must enter the checkout time first.")
 
         duration_seconds = (self._exit_time - self._entry_time).total_seconds()
         billed_hours = max(1, math.ceil(duration_seconds / 3600))
@@ -156,7 +156,7 @@ class AutoLavado:
     def get_total_duration(self):
         """Obtiene el tiempo total transcurrido en horas y minutos."""
         if self._exit_time is None:
-            raise ValueError("Debe registrar primero la hora de salida.")
+            raise ValueError("You must enter the checkout time first.")
 
         total_minutes = int((self._exit_time - self._entry_time).total_seconds() // 60)
         hours = total_minutes // 60
