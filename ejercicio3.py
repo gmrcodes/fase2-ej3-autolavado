@@ -1,14 +1,14 @@
 import math
 import tkinter as tk
 from datetime import datetime
-from tkinter import messagebox, ttk, font
+from tkinter import messagebox, ttk
 
 SYSTEM_FONT = "TkDefaultFont"
 
 class User:
     """Representa el usuario del sistema de autenticación."""
 
-    def __init__(self, username="123", password="123"):
+    def __init__(self, username="programacion", password="programacion"):
         """Inicializa el usuario con validación de campos obligatorios."""
         self._username = self._validate_username(username)
         self._password = self._validate_password(password)
